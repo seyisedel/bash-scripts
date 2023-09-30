@@ -1,0 +1,83 @@
+#!/bin/bash
+
+# Define variables for the VM and resource group
+resourceGroupName="myResourceGroup"
+vmName="myUbuntuVM"
+location="eastus"
+adminUser="azureuser"
+adminPassword="Sed3l01@2015."  
+vmSize="Standard_B1s"  # Choose an appropriate VM size
+
+# Function to create a resource group
+createResourceGroup() {
+    echo "Creating resource group $resourceGroupName..."
+    az group create --name $resourceGroupName --location $location
+}
+
+# Function to create an Ubuntu VM
+createUbuntuVM() {
+    echo "Creating Ubuntu VM $vmName..."
+    az vm create \
+        --resource-group $resourceGroupName \
+        --name $vmName \
+        --image Canonical:UbuntuServer:18.04-LTS:latest \
+        --admin-username $adminUser \
+        --admin-password $adminPassword \
+        --size $vmSize \
+        --authentication-type password
+}
+
+# Function to open port 80 (HTTP) on the VM's network security group
+openPort80() {
+    echo "Opening port 80 on $vmName..."
+    az vm open-port --port 80 --resource-group $resourceGroupName --name $vmName
+}
+
+# Function to install LAMP stack on the VM
+installLAMPStack() {
+    echo "Installing LAMP stack on $vmName..."
+    az vm extension set \
+    --resource-group $resourceGroupName \
+    --vm-name $vmName \
+    --name CustomScript \
+    --publisher Microsoft.Azure.Extensions \
+    --version 2.0 \
+    --settings '{"script": "base64-encoded-script-here"}'
+}
+
+# Function to display the public IP address of the VM
+displayPublicIP() {
+    publicIP=$(az vm show --resource-group $resourceGroupName --name $vmName --show-details --query "publicIps" --output tsv)
+    if [ -n "$publicIP" ]; then
+        echo "Your Ubuntu VM is now running. You can access the LAMP server at http://$publicIP/"
+    else
+        echo "Failed to retrieve the public IP address of the VM. Please check your Azure configuration."
+    fi
+}
+
+# Main script
+
+# Check if the Azure CLI is installed
+if ! command -v az &> /dev/null; then
+    echo "Azure CLI is not installed. Please install it and configure your Azure credentials."
+    exit 1
+fi
+
+# Check if the resource group already exists
+if az group show --name $resourceGroupName &> /dev/null; then
+    echo "Resource group $resourceGroupName already exists."
+else
+    createResourceGroup
+fi
+
+# Check if the VM already exists
+if az vm show --resource-group $resourceGroupName --name $vmName &> /dev/null; then
+    echo "VM $vmName already exists."
+else
+    createUbuntuVM
+    openPort80
+    installLAMPStack
+fi
+
+# Display the public IP address
+displayPublicIP

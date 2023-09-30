@@ -1,0 +1,44 @@
+#!/bin/bash
+
+# Define the configuration file
+config_file="task_scheduler.conf"
+
+# Function to run a task
+run_task() {
+    local task="$1"
+    echo "Running task: $task"
+    # Replace the following line with the actual command to run
+    # Example: eval "$task"
+    echo "Task completed: $task"
+}
+
+# Function to parse and execute tasks from the config file
+parse_config_and_run_tasks() {
+    while IFS= read -r line; do
+        # Ignore comments and empty lines
+        if [[ "$line" =~ ^\s*#.*$ ]] || [[ -z "$line" ]]; then
+            continue
+        fi
+
+        # Split the line into schedule and task parts
+        schedule=$(echo "$line" | awk '{print $1}')
+        task=$(echo "$line" | cut -d' ' -f2-)
+
+        # Check if the schedule matches the current time
+        current_time=$(date +"%H:%M")
+        if [ "$schedule" == "$current_time" ]; then
+            run_task "$task"
+        fi
+    done < "$config_file"
+}
+
+# Main script
+
+# Check if the config file exists
+if [ ! -f "$config_file" ]; then
+    echo "Config file not found: $config_file"
+    exit 1
+fi
+
+# Run tasks based on the schedule in the config file
+parse_config_and_run_tasks

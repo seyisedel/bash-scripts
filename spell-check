@@ -1,0 +1,37 @@
+#!/bin/bash
+
+# Function to perform spell-check on a file
+spellcheck_file() {
+    local file="$1"
+    echo "Spell-checking $file..."
+    aspell check "$file"
+    echo "=========================="
+}
+
+# Function to spell-check all text files in a folder
+spellcheck_folder() {
+    local folder="$1"
+    echo "Spell-checking files in folder: $folder"
+    
+    # Loop through all files in the folder
+    for file in "$folder"/*; do
+        # Check if the file is a regular file and not a directory
+        if [ -f "$file" ]; then
+            # Check if the file has a recognized text file extension (you can customize this list)
+            if [[ "$file" =~ \.(txt|md|html|css|js|c|h|cpp|hpp|py)$ ]]; then
+                spellcheck_file "$file"
+            fi
+        fi
+    done
+}
+
+# Ask the user for a folder path
+read -p "Enter the folder path for spell-checking: " folder_path
+
+# Check if the folder exists
+if [ -d "$folder_path" ]; then
+    spellcheck_folder "$folder_path"
+    echo "Spell-check completed."
+else
+    echo "Folder not found: $folder_path"
+fi
